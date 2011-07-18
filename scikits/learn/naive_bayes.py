@@ -21,7 +21,7 @@ complete documentation.
 # License: BSD Style.
 
 from .base import BaseEstimator, ClassifierMixin
-from .preprocessing import binarize, LabelBinarizer
+from .preprocessing import binarize, LabelBinarizer, normalize
 from .utils import safe_asanyarray, atleast2d_or_csr
 from .utils.extmath import safe_sparse_dot
 from .utils.fixes import unique
@@ -257,6 +257,9 @@ class BaseDiscreteNB(BaseEstimator, ClassifierMixin):
         self.feature_log_prob_ = (np.log(N_c_i + self.alpha)
                     - np.log(N_c.reshape(-1, 1)
                            + self.alpha * X.shape[1]))
+
+        if self.multiclass == 'complement':
+            normalize(self.feature_log_prob_, norm='l1', copy=False)
 
         return self
 
