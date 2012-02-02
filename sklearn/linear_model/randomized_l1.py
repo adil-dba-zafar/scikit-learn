@@ -8,11 +8,11 @@ sparse Logistic Regression
 # License: BSD Style.
 
 import numpy as np
-from scipy.sparse import issparse
 from scipy.interpolate import interp1d
 
 from .base import center_data
-from ..base import BaseEstimator, TransformerMixin
+from ..base import BaseEstimator
+from ..feature_selection.base import FeatureSelectorMixin
 from ..utils import as_float_array, check_random_state, safe_asarray
 from ..externals.joblib import Parallel, delayed
 from .least_angle import lars_path, LassoLarsIC
@@ -51,7 +51,7 @@ def _resample_model(estimator_func, X, y, scaling=.5, n_resampling=200,
     return scores_
 
 
-class BaseRandomizedLinearModel(BaseEstimator, TransformerMixin):
+class BaseRandomizedLinearModel(BaseEstimator, FeatureSelectorMixin):
     """Base class to implement randomized linear models for feature selection
 
     This implements the strategy by Meinshausen and Buhlman:
@@ -116,21 +116,6 @@ class BaseRandomizedLinearModel(BaseEstimator, TransformerMixin):
         """Return a mask, or list, of the features/indices selected."""
         mask = self.scores_ > self.selection_threshold
         return mask if not indices else np.where(mask)[0]
-
-    # XXX: the two function below are copy/pasted from feature_selection,
-    # Should we add an intermediate base class?
-    def transform(self, X):
-        """Transform a new matrix using the selected features"""
-        return safe_asarray(X)[:, self.get_support(indices=issparse(X))]
-
-    def inverse_transform(self, X):
-        """Transform a new matrix using the selected features"""
-        support = self.get_support()
-        if X.ndim == 1:
-            X = X[None, :]
-        Xt = np.zeros((X.shape[0], support.size))
-        Xt[:, support] = X
-        return Xt
 
 
 ###############################################################################
