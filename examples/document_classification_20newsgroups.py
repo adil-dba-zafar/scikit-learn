@@ -32,6 +32,7 @@ import pylab as pl
 from sklearn.datasets import fetch_20newsgroups
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.feature_selection import SelectKBest, chi2
+from sklearn.ffnet import ELMClassifier
 from sklearn.linear_model import RidgeClassifier
 from sklearn.svm import LinearSVC
 from sklearn.linear_model import SGDClassifier
@@ -193,6 +194,9 @@ for clf, name in ((RidgeClassifier(tol=1e-1), "Ridge Classifier"),
     print 80 * '='
     print name
     results.append(benchmark(clf))
+
+for n_hidden in (50, 100, 500):
+    results.append(benchmark(ELMClassifier(n_hidden=n_hidden)))
 
 for penalty in ["l2", "l1"]:
     print 80 * '='
