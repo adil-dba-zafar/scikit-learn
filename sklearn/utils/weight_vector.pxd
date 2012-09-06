@@ -20,6 +20,7 @@ cdef class WeightVector(object):
 
     cdef void add(self,  DOUBLE *x_data_ptr, INTEGER *x_ind_ptr,
                   int xnnz, double c)
+    cdef void add_avg(self, WeightVector other, double t)
     cdef double dot(self, DOUBLE *x_data_ptr, INTEGER *x_ind_ptr,
                     int xnnz)
     cdef void scale(self, double c)

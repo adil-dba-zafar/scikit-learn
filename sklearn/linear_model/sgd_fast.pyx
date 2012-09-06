@@ -265,13 +265,14 @@ cdef class EpsilonInsensitive(Regression):
 
 
 def plain_sgd(np.ndarray[DOUBLE, ndim=1, mode='c'] weights,
+              np.ndarray[DOUBLE, ndim=1, mode='c'] weights_avg,
               double intercept,
               LossFunction loss,
               int penalty_type,
               double alpha, double rho,
               SequentialDataset dataset,
               int n_iter, int fit_intercept,
-              int verbose, int shuffle, int seed,
+              int verbose, int shuffle, int seed, # int averaged,
               double weight_pos, double weight_neg,
               int learning_rate, double eta0,
               double power_t,
@@ -337,7 +338,11 @@ def plain_sgd(np.ndarray[DOUBLE, ndim=1, mode='c'] weights,
     cdef Py_ssize_t n_samples = dataset.n_samples
     cdef Py_ssize_t n_features = weights.shape[0]
 
+    cdef bint averaged = weights_avg.shape[0] > 0
     cdef WeightVector w = WeightVector(weights)
+    #cdef WeightVector w_avg
+    #weights_avg = np.zeros(weights.size * averaged)
+    cdef WeightVector w_avg = WeightVector(weights_avg)
 
     cdef DOUBLE *x_data_ptr = NULL
     cdef INTEGER *x_ind_ptr = NULL
@@ -345,6 +350,7 @@ def plain_sgd(np.ndarray[DOUBLE, ndim=1, mode='c'] weights,
     # helper variable
     cdef int xnnz
     cdef double eta = 0.0
+    cdef double intercept_avg = 0.0
     cdef double p = 0.0
     cdef double update = 0.0
     cdef double sumloss = 0.0
@@ -405,6 +411,11 @@ def plain_sgd(np.ndarray[DOUBLE, ndim=1, mode='c'] weights,
             if penalty_type == L1 or penalty_type == ELASTICNET:
                 u += ((1.0 - rho) * eta * alpha)
                 l1penalty(w, q_data_ptr, x_ind_ptr, xnnz, u)
+
+            if averaged:
+                w_avg.add_avg(w, t)
+                intercept_avg = (t / (t + 1.)) * intercept_avg + (1 / (t + 1)) * intercept
+
             t += 1
             count += 1
 
@@ -424,7 +435,10 @@ def plain_sgd(np.ndarray[DOUBLE, ndim=1, mode='c'] weights,
 
     w.reset_wscale()
 
-    return weights, intercept
+    if averaged:
+        return weights_avg, intercept_avg
+    else:
+        return weights, intercept
 
 
 cdef inline double max(double a, double b):

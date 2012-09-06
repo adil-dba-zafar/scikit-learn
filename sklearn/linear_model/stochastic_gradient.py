@@ -44,8 +44,9 @@ class BaseSGD(BaseEstimator):
 
     def __init__(self, loss, penalty='l2', alpha=0.0001,
                  rho=0.85, fit_intercept=True, n_iter=5, shuffle=False,
-                 verbose=0, epsilon=0.1, seed=0, learning_rate="optimal",
-                 eta0=0.0, power_t=0.5, warm_start=False):
+                 verbose=0, epsilon=0.1, seed=0, averaged=False,
+                 learning_rate="optimal", eta0=0.0, power_t=0.5,
+                 warm_start=False):
         self.loss = str(loss)
         self.penalty = str(penalty).lower()
         self.epsilon = float(epsilon)
@@ -66,6 +67,7 @@ class BaseSGD(BaseEstimator):
             raise ValueError("shuffle must be either True or False")
         self.shuffle = bool(shuffle)
         self.seed = seed
+        self.averaged = bool(averaged)
         self.verbose = int(verbose)
 
         self.learning_rate = str(learning_rate)
@@ -322,7 +324,7 @@ class SGDClassifier(BaseSGD, ClassifierMixin, SelectorMixin):
     """
     def __init__(self, loss="hinge", penalty='l2', alpha=0.0001,
                  rho=0.85, fit_intercept=True, n_iter=5, shuffle=False,
-                 verbose=0, epsilon=0.1, n_jobs=1, seed=0,
+                 verbose=0, epsilon=0.1, n_jobs=1, seed=0, averaged=False,
                  learning_rate="optimal", eta0=0.0, power_t=0.5,
                  class_weight=None, warm_start=False):
         super(SGDClassifier, self).__init__(loss=loss, penalty=penalty,
@@ -330,7 +332,7 @@ class SGDClassifier(BaseSGD, ClassifierMixin, SelectorMixin):
                                             fit_intercept=fit_intercept,
                                             n_iter=n_iter, shuffle=shuffle,
                                             verbose=verbose, epsilon=epsilon,
-                                            seed=seed,
+                                            seed=seed, averaged=averaged,
                                             learning_rate=learning_rate,
                                             eta0=eta0, power_t=power_t,
                                             warm_start=warm_start)
@@ -660,10 +662,12 @@ def fit_binary(est, i, X, y, n_iter, pos_weight, neg_weight,
     assert y_i.shape[0] == y.shape[0] == sample_weight.shape[0]
     dataset, intercept_decay = _make_dataset(X, y_i, sample_weight)
 
-    return plain_sgd(coef, intercept, est.loss_function,
+    coef_avg = np.zeros(coef.shape[0] if est.averaged else 0)
+
+    return plain_sgd(coef, coef_avg, intercept, est.loss_function,
                      est.penalty_type, est.alpha, est.rho,
                      dataset, n_iter, est.fit_intercept,
-                     est.verbose, est.shuffle, est.seed,
+                     est.verbose, est.shuffle, est.seed, # est.averaged,
                      pos_weight, neg_weight,
                      est.learning_rate_type, est.eta0,
                      est.power_t, est.t_, intercept_decay)
@@ -775,8 +779,9 @@ class SGDRegressor(BaseSGD, RegressorMixin, SelectorMixin):
     """
     def __init__(self, loss="squared_loss", penalty="l2", alpha=0.0001,
             rho=0.85, fit_intercept=True, n_iter=5, shuffle=False, verbose=0,
-            epsilon=0.1, p=None, seed=0, learning_rate="invscaling", eta0=0.01,
-            power_t=0.25, warm_start=False):
+            epsilon=0.1, p=None, seed=0, averaged=False,
+            learning_rate="invscaling", eta0=0.01, power_t=0.25,
+            warm_start=False):
 
         if p is not None:
             warnings.warn("Using 'p' is deprecated and will be removed in "
@@ -790,7 +795,7 @@ class SGDRegressor(BaseSGD, RegressorMixin, SelectorMixin):
                                            fit_intercept=fit_intercept,
                                            n_iter=n_iter, shuffle=shuffle,
                                            verbose=verbose, epsilon=epsilon,
-                                           seed=seed,
+                                           seed=seed, averaged=averaged,
                                            learning_rate=learning_rate,
                                            eta0=eta0, power_t=power_t,
                                            warm_start=False)
@@ -923,7 +928,9 @@ class SGDRegressor(BaseSGD, RegressorMixin, SelectorMixin):
     def _fit_regressor(self, X, y, sample_weight, n_iter):
         dataset, intercept_decay = _make_dataset(X, y, sample_weight)
 
+        coef_avg = np.zeros(coef.shape[0] if self.averaged else 0)
         self.coef_, intercept = plain_sgd(self.coef_,
+                                          coef_avg,
                                           self.intercept_[0],
                                           self.loss_function,
                                           self.penalty_type,
@@ -934,6 +941,7 @@ class SGDRegressor(BaseSGD, RegressorMixin, SelectorMixin):
                                           int(self.verbose),
                                           int(self.shuffle),
                                           self.seed,
+                                          #self.averaged,
                                           1.0, 1.0,
                                           self.learning_rate_type,
                                           self.eta0, self.power_t, self.t_,

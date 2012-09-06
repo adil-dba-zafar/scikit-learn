@@ -80,6 +80,14 @@ cdef class WeightVector(object):
 
         self.sq_norm += (xsqnorm * c * c) + (2.0 * innerprod * wscale * c)
 
+    cdef void add_avg(self, WeightVector other, double t):
+        cdef DOUBLE* w = self.w_data_ptr
+        cdef DOUBLE* w_other = other.w_data_ptr
+
+        for j in xrange(self.n_features):
+            w[j] *= t / (t + 1.)
+            w[j] += 1 / (t + 1.) * w_other[j]
+
     cdef double dot(self, DOUBLE *x_data_ptr, INTEGER *x_ind_ptr, int xnnz):
         """Computes the dot product of a sample x and the weight vector.
 

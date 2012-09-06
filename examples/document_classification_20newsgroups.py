@@ -209,6 +209,11 @@ for penalty in ["l2", "l1"]:
     results.append(benchmark(SGDClassifier(alpha=.0001, n_iter=50,
                                           penalty=penalty)))
 
+    # Train ASGD model
+    results.append(benchmark(SGDClassifier(alpha=.0001, n_iter=1,
+                                           averaged=True,
+                                           penalty=penalty)))
+
 # Train SGD with Elastic Net penalty
 print 80 * '='
 print "Elastic-Net penalty"
