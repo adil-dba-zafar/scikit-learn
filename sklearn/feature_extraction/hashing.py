@@ -55,17 +55,20 @@ class FeatureHasher(BaseEstimator, TransformerMixin):
         effectively calls abs on the matrix prior to returning it.
         When True, output values can be interpreted as frequencies.
         When False, output values will have expected value zero.
+    quadratic: boolean, optional
+        When True, generate quadratic features.
 
     """
 
     def __init__(self, n_features=(2 ** 20), input_type="dict",
-                 dtype=np.float64, non_negative=False):
+                 dtype=np.float64, non_negative=False, quadratic=False):
         self._validate_params(n_features, input_type)
 
         self.dtype = dtype
         self.input_type = input_type
         self.n_features = n_features
         self.non_negative = non_negative
+        self.quadratic = quadratic
 
     @staticmethod
     def _validate_params(n_features, input_type):
@@ -121,7 +124,7 @@ class FeatureHasher(BaseEstimator, TransformerMixin):
         elif self.input_type == "string":
             raw_X = (((f, 1) for f in x) for x in raw_X)
         indices, indptr, values = \
-            _hashing.transform(raw_X, self.n_features, self.dtype)
+            _hashing.transform(raw_X, self.n_features, self.quadratic)
         n_samples = indptr.shape[0] - 1
 
         if n_samples == 0:
